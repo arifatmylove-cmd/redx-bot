@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.RedxBot" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent_purple</item>
+        <item name="colorPrimaryDark">@color/bg_dark</item>
+        <item name="colorAccent">@color/accent_purple</item>
+        <item name="android:windowBackground">@color/bg_dark</item>
+        <item name="android:statusBarColor">@color/status_bar</item>
+        <item name="android:navigationBarColor">@color/bg_dark</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="Theme.RedxBot.Toolbar" parent="Widget.AppCompat.Toolbar">
+        <item name="android:background">@color/bg_surface</item>
+        <item name="titleTextColor">@color/text_primary</item>
+    </style>
+</resources>

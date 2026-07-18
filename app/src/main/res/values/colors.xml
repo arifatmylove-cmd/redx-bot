@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background colors -->
+    <color name="bg_dark">#0D0D17</color>
+    <color name="bg_surface">#16162A</color>
+    <color name="bg_card">#1E1E35</color>
+
+    <!-- Accent colors -->
+    <color name="accent_purple">#7C4DFF</color>
+    <color name="accent_purple_light">#9C6FFF</color>
+    <color name="accent_blue">#448AFF</color>
+
+    <!-- Message bubble colors -->
+    <color name="bubble_user">#7C4DFF</color>
+    <color name="bubble_ai">#1E1E35</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0C8</color>
+    <color name="text_hint">#6060A0</color>
+
+    <!-- Input colors -->
+    <color name="input_bg">#1A1A30</color>
+    <color name="divider">#2A2A45</color>
+
+    <!-- Status bar -->
+    <color name="status_bar">#0D0D17</color>
+</resources>
