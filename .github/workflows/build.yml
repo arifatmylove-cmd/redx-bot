@@ -25,10 +25,45 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Generate launcher icons (PNG for all densities)
+        run: |
+          python3 << 'EOF'
+          import struct, zlib, os
+
+          def make_png(size, fg=(124, 77, 255), bg=(13, 13, 23)):
+              def chunk(ctype, data):
+                  c = ctype + data
+                  return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+              sig = b'\x89PNG\r\n\x1a\n'
+              ihdr = chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0))
+              cx, cy, r = size / 2, size / 2, size * 0.44
+              raw = bytearray()
+              for y in range(size):
+                  raw.append(0)
+                  for x in range(size):
+                      color = fg if ((x-cx)**2+(y-cy)**2)**0.5 < r else bg
+                      raw.extend(color)
+              idat = chunk(b'IDAT', zlib.compress(bytes(raw), 9))
+              iend = chunk(b'IEND', b'')
+              return sig + ihdr + idat + iend
+
+          densities = {
+              'mipmap-mdpi': 48, 'mipmap-hdpi': 72, 'mipmap-xhdpi': 96,
+              'mipmap-xxhdpi': 144, 'mipmap-xxxhdpi': 192
+          }
+          for folder, size in densities.items():
+              os.makedirs(f'app/src/main/res/{folder}', exist_ok=True)
+              png = make_png(size)
+              for name in ['ic_launcher.png', 'ic_launcher_round.png']:
+                  with open(f'app/src/main/res/{folder}/{name}', 'wb') as f:
+                      f.write(png)
+                  print(f'Created {folder}/{name} ({size}x{size})')
+          EOF
+
       - name: Download Gradle wrapper jar
         run: |
           mkdir -p gradle/wrapper
-          curl -fsSL "https://raw.githubusercontent.com/gradle/gradle/v8.6.0/gradle/wrapper/gradle-wrapper.jar" \
+          curl -fsSL "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
             -o gradle/wrapper/gradle-wrapper.jar
 
       - name: Grant execute permission for gradlew
@@ -46,5 +81,5 @@ jobs:
 
       - name: Display APK info
         run: |
-          echo "✅ Build successful!"
+          echo "Build successful!"
           ls -lh app/build/outputs/apk/debug/
