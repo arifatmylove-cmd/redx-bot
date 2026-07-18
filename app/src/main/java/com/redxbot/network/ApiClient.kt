@@ -240,10 +240,11 @@ App description: $description
 
     // ── Image helper ──────────────────────────────────────────────────────────
 
-    private fun encodeImageToBase64(uri: Uri): String? = try {
-        val stream = context.contentResolver.openInputStream(uri) ?: return null
-        val bytes = stream.readBytes()
-        stream.close()
-        Base64.encodeToString(bytes, Base64.NO_WRAP)
-    } catch (_: Exception) { null }
+    private fun encodeImageToBase64(uri: Uri): String? {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                Base64.encodeToString(stream.readBytes(), Base64.NO_WRAP)
+            }
+        } catch (e: Exception) { null }
+    }
 }
