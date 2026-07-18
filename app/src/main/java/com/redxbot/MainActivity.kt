@@ -129,14 +129,21 @@ class MainActivity : AppCompatActivity() {
                 adapter.updateLastMessage(content)
             }.onFailure { error ->
                 adapter.removeLastIfLoading()
+                val msg = error.message ?: ""
                 val errorMsg = when {
-                    error.message?.contains("401") == true ->
-                        "Invalid API key. Go to Settings and add your OpenRouter API key (free at openrouter.ai)"
-                    error.message?.contains("429") == true ->
+                    apiClient.getApiKey().isEmpty() ->
+                        "No API key set. Go to ⚙️ Settings and paste your OpenRouter API key (free at openrouter.ai)"
+                    msg.contains("401") ->
+                        "API key rejected. Check it in ⚙️ Settings — get a free key at openrouter.ai"
+                    msg.contains("402") ->
+                        "This model requires credits. The free quota may be exhausted — try again later."
+                    msg.contains("404") ->
+                        "Model unavailable. The app will auto-update models. Try again in a moment."
+                    msg.contains("429") ->
                         "Rate limit hit. Please wait a moment and try again."
-                    error.message?.contains("timeout", ignoreCase = true) == true ->
+                    msg.contains("timeout", ignoreCase = true) ->
                         "Request timed out. Check your internet connection."
-                    else -> "Error: ${error.message}"
+                    else -> "Error: $msg"
                 }
                 val errorMessage = Message(
                     role = Message.Role.ASSISTANT,

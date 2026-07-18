@@ -18,8 +18,9 @@ class ApiClient(private val context: Context) {
 
     companion object {
         const val DEFAULT_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-        const val TEXT_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
-        const val VISION_MODEL = "meta-llama/llama-3.2-11b-vision-instruct:free"
+        // google/gemma-4-26b-a4b-it:free supports both text and vision
+        const val TEXT_MODEL = "google/gemma-4-26b-a4b-it:free"
+        const val VISION_MODEL = "google/gemma-4-26b-a4b-it:free"
         const val PREFS_NAME = "RedxBotPrefs"
         const val PREF_API_KEY = "api_key"
         const val PREF_SYSTEM_PROMPT = "system_prompt"
@@ -47,7 +48,7 @@ class ApiClient(private val context: Context) {
         prefs.edit()
             .putString(PREF_API_KEY, apiKey)
             .putString(PREF_SYSTEM_PROMPT, systemPrompt)
-            .apply()
+            .commit() // synchronous write — ensures data is saved before activity finishes
     }
 
     suspend fun chat(
