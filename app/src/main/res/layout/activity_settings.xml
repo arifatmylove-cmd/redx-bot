@@ -6,18 +6,23 @@
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/bg_surface"
-        android:elevation="4dp"
-        app:titleTextColor="@color/text_primary" />
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/bg_surface">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:titleTextColor="@color/text_primary"/>
+
+    </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="?attr/actionBarSize"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:padding="16dp">
 
         <LinearLayout
@@ -25,7 +30,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- API Key section -->
+            <!-- ── OpenRouter API Key ───────────────────────────── -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -34,7 +39,7 @@
                 android:textColor="@color/accent_purple_light"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.1" />
+                android:letterSpacing="0.1"/>
 
             <EditText
                 android:id="@+id/etApiKey"
@@ -47,7 +52,7 @@
                 android:inputType="textVisiblePassword"
                 android:padding="14dp"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="14sp"/>
 
             <TextView
                 android:id="@+id/tvGetApiKey"
@@ -55,24 +60,24 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+                android:textSize="12sp"/>
 
-            <!-- System prompt section -->
+            <!-- ── System Prompt ────────────────────────────────── -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
-                android:text="System Prompt"
+                android:text="System Prompt (AI Persona)"
                 android:textColor="@color/accent_purple_light"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.1" />
+                android:letterSpacing="0.1"/>
 
             <EditText
                 android:id="@+id/etSystemPrompt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="8dp"
                 android:background="@drawable/bg_input"
                 android:gravity="top"
                 android:inputType="textMultiLine|textCapSentences"
@@ -80,7 +85,7 @@
                 android:maxLines="10"
                 android:padding="14dp"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="14sp"/>
 
             <Button
                 android:id="@+id/btnReset"
@@ -90,8 +95,103 @@
                 android:text="Reset to default"
                 android:backgroundTint="@color/bg_card"
                 android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:textSize="13sp"/>
 
+            <!-- ── GitHub (App Builder) ─────────────────────────── -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="20dp"
+                android:background="@color/divider"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text="GitHub (for App Builder)"
+                android:textColor="@color/accent_purple_light"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Required to generate and compile apps. Token needs repo + workflow permissions."
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text="GitHub Username"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"/>
+
+            <EditText
+                android:id="@+id/etGithubUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_input"
+                android:hint="your-username"
+                android:textColorHint="@color/text_hint"
+                android:inputType="textNoSuggestions"
+                android:padding="14dp"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text="Personal Access Token"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"/>
+
+            <EditText
+                android:id="@+id/etGithubToken"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/bg_input"
+                android:hint="ghp_xxxxxxxxxxxxxxxxxxxx"
+                android:textColorHint="@color/text_hint"
+                android:inputType="textPassword"
+                android:padding="14dp"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"/>
+
+            <!-- ── Data ─────────────────────────────────────────── -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="20dp"
+                android:background="@color/divider"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Data"
+                android:textColor="@color/accent_purple_light"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"/>
+
+            <Button
+                android:id="@+id/btnClearHistory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:text="🗑  Clear Chat History"
+                android:backgroundTint="@color/bg_card"
+                android:textColor="#FF5252"
+                android:textSize="14sp"/>
+
+            <!-- ── Save ─────────────────────────────────────────── -->
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
@@ -100,7 +200,8 @@
                 android:backgroundTint="@color/accent_purple"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:layout_marginBottom="32dp"/>
 
         </LinearLayout>
     </ScrollView>

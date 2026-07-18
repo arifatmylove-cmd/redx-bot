@@ -6,39 +6,24 @@
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
 
-    <!-- Toolbar -->
-    <LinearLayout
-        android:id="@+id/toolbar"
+    <!-- Proper AppBar so toolbar menus work -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:background="@color/bg_surface"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="8dp"
-        android:elevation="4dp"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/bg_surface"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="RedxBot"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:elevation="4dp"
+            app:titleTextColor="@color/text_primary" />
 
-        <ImageButton
-            android:id="@+id/btnSettings"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Settings"
-            android:src="@drawable/ic_settings"
-            android:tint="@color/text_secondary" />
-    </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <!-- Chat list -->
     <androidx.recyclerview.widget.RecyclerView
@@ -51,7 +36,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout" />
 
     <!-- Bottom input bar -->
     <LinearLayout
@@ -142,5 +127,14 @@
                 android:tint="@color/text_primary" />
         </LinearLayout>
     </LinearLayout>
+
+    <!-- Settings button still here as hidden — kept for compatibility -->
+    <View
+        android:id="@+id/btnSettings"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

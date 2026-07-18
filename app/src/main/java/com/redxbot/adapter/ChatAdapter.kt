@@ -29,6 +29,12 @@ class ChatAdapter(private val markwon: Markwon) :
         notifyDataSetChanged()
     }
 
+    fun clearAll() {
+        val size = messages.size
+        messages.clear()
+        notifyItemRangeRemoved(0, size)
+    }
+
     fun addMessage(message: Message) {
         messages.add(message)
         notifyItemInserted(messages.size - 1)
