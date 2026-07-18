@@ -43,7 +43,7 @@
                 android:layout_marginBottom="8dp"
                 android:background="@drawable/bg_input"
                 android:hint="sk-or-v1-..."
-                android:hintTextColor="@color/text_hint"
+                android:textColorHint="@color/text_hint"
                 android:inputType="textVisiblePassword"
                 android:padding="14dp"
                 android:textColor="@color/text_primary"

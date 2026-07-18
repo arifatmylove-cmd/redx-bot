@@ -121,7 +121,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/bg_input"
                 android:hint="@string/hint_message"
-                android:hintTextColor="@color/text_hint"
+                android:textColorHint="@color/text_hint"
                 android:imeOptions="actionSend"
                 android:inputType="textMultiLine|textCapSentences"
                 android:maxLines="5"
