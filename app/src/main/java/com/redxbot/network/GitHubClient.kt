@@ -19,106 +19,99 @@ class GitHubClient(val token: String, val owner: String) {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private fun authRequest(url: String) = Request.Builder()
+    private fun auth(url: String) = Request.Builder()
         .url(url)
         .addHeader("Authorization", "Bearer $token")
         .addHeader("Accept", "application/vnd.github+json")
+        .addHeader("X-GitHub-Api-Version", "2022-11-28")
 
     // ── Repo ──────────────────────────────────────────────────────────────────
 
     suspend fun createRepo(name: String, description: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val body = JSONObject().apply {
-                put("name", name)
-                put("description", description)
-                put("private", false)
-                put("auto_init", false)
+                put("name", name); put("description", description)
+                put("private", false); put("auto_init", false)
             }.toString().toRequestBody("application/json".toMediaType())
-
-            val req = authRequest("https://api.github.com/user/repos").post(body).build()
-            val resp = http.newCall(req).execute()
-            val rb = resp.body?.string() ?: ""
-            // 422 = already exists — treat as OK
-            if (!resp.isSuccessful && resp.code != 422)
-                return@withContext Result.failure(Exception("Create repo failed (${resp.code}): $rb"))
-            Result.success(Unit)
+            val resp = http.newCall(auth("https://api.github.com/user/repos").post(body).build()).execute()
+            val rb   = resp.body?.string() ?: ""
+            if (!resp.isSuccessful && resp.code != 422) Result.failure(Exception("Create repo failed (${resp.code}): $rb"))
+            else Result.success(Unit)
         } catch (e: Exception) { Result.failure(e) }
     }
 
-    // ── File content ──────────────────────────────────────────────────────────
+    // ── File operations ───────────────────────────────────────────────────────
 
-    /** Get the SHA of a file in the repo (returns null if file doesn't exist). */
     private fun getFileSha(repo: String, path: String): String? = try {
-        val req = authRequest("https://api.github.com/repos/$owner/$repo/contents/$path").get().build()
-        val resp = http.newCall(req).execute()
+        val resp = http.newCall(auth("https://api.github.com/repos/$owner/$repo/contents/$path").get().build()).execute()
         if (!resp.isSuccessful) null
         else JSONObject(resp.body?.string() ?: "{}").optString("sha").takeIf { it.isNotEmpty() }
-    } catch (_: Exception) { null }
+    } catch (e: Exception) { null }
 
     suspend fun pushFile(repo: String, path: String, content: String, message: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
-                val encoded = Base64.encodeToString(content.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
-                pushEncoded(repo, path, encoded, message)
+                pushEncoded(repo, path, Base64.encodeToString(content.toByteArray(), Base64.NO_WRAP), message)
             } catch (e: Exception) { Result.failure(e) }
         }
 
     suspend fun pushBinary(repo: String, path: String, bytes: ByteArray, message: String): Result<Unit> =
         withContext(Dispatchers.IO) {
-            try {
-                val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                pushEncoded(repo, path, encoded, message)
-            } catch (e: Exception) { Result.failure(e) }
+            try { pushEncoded(repo, path, Base64.encodeToString(bytes, Base64.NO_WRAP), message) }
+            catch (e: Exception) { Result.failure(e) }
         }
 
     private fun pushEncoded(repo: String, path: String, b64: String, message: String): Result<Unit> {
         val sha = getFileSha(repo, path)
-        val bodyObj = JSONObject().apply {
-            put("message", message)
-            put("content", b64)
-            if (sha != null) put("sha", sha)
-        }
-        val req = authRequest("https://api.github.com/repos/$owner/$repo/contents/$path")
-            .put(bodyObj.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-        val resp = http.newCall(req).execute()
-        return if (!resp.isSuccessful) {
-            val rb = resp.body?.string() ?: ""
-            Result.failure(Exception("Push $path failed (${resp.code}): $rb"))
-        } else Result.success(Unit)
+        val obj = JSONObject().apply { put("message", message); put("content", b64); if (sha != null) put("sha", sha) }
+        val resp = http.newCall(
+            auth("https://api.github.com/repos/$owner/$repo/contents/$path")
+                .put(obj.toString().toRequestBody("application/json".toMediaType())).build()
+        ).execute()
+        return if (!resp.isSuccessful) Result.failure(Exception("Push $path (${resp.code}): ${resp.body?.string()?.take(200)}"))
+        else Result.success(Unit)
     }
 
-    // ── Source repo browsing (public repo — no auth needed) ──────────────────
+    /**
+     * Read a file from the target repo and return its decoded text.
+     * Used by the auto-fix loop to fetch the current broken file content.
+     */
+    suspend fun getFileContent(repo: String, path: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val resp = http.newCall(auth("https://api.github.com/repos/$owner/$repo/contents/$path").get().build()).execute()
+            if (!resp.isSuccessful) return@withContext null
+            val encoded = JSONObject(resp.body?.string() ?: "{}").getString("content")
+                .replace("\n", "").replace(" ", "")
+            String(Base64.decode(encoded, Base64.DEFAULT), Charsets.UTF_8)
+        } catch (e: Exception) { null }
+    }
+
+    // ── Template browsing ─────────────────────────────────────────────────────
 
     data class TreeEntry(val path: String, val sha: String, val type: String)
 
     suspend fun getRepoTree(repoOwner: String, repoName: String, branch: String = "main"): Result<List<TreeEntry>> =
         withContext(Dispatchers.IO) {
             try {
-                val url = "https://api.github.com/repos/$repoOwner/$repoName/git/trees/$branch?recursive=1"
-                val req = authRequest(url).get().build()
-                val resp = http.newCall(req).execute()
+                val url  = "https://api.github.com/repos/$repoOwner/$repoName/git/trees/$branch?recursive=1"
+                val resp = http.newCall(auth(url).get().build()).execute()
                 val body = resp.body?.string() ?: ""
                 if (!resp.isSuccessful) return@withContext Result.failure(Exception("Tree failed: $body"))
                 val tree = JSONObject(body).getJSONArray("tree")
-                val entries = (0 until tree.length()).mapNotNull { i ->
-                    val obj = tree.getJSONObject(i)
-                    if (obj.getString("type") == "blob")
-                        TreeEntry(obj.getString("path"), obj.getString("sha"), obj.getString("type"))
-                    else null
-                }
-                Result.success(entries)
+                Result.success((0 until tree.length()).mapNotNull { i ->
+                    val o = tree.getJSONObject(i)
+                    if (o.getString("type") == "blob") TreeEntry(o.getString("path"), o.getString("sha"), "blob") else null
+                })
             } catch (e: Exception) { Result.failure(e) }
         }
 
     suspend fun getRawContent(repoOwner: String, repoName: String, branch: String, path: String): Result<String> =
         withContext(Dispatchers.IO) {
             try {
-                val url = "https://raw.githubusercontent.com/$repoOwner/$repoName/$branch/$path"
-                val req = Request.Builder().url(url).get().build()
-                val resp = http.newCall(req).execute()
+                val url  = "https://raw.githubusercontent.com/$repoOwner/$repoName/$branch/$path"
+                val resp = http.newCall(Request.Builder().url(url).get().build()).execute()
                 val body = resp.body?.string() ?: ""
-                if (!resp.isSuccessful) Result.failure(Exception("Fetch $path failed (${resp.code})"))
+                if (!resp.isSuccessful) Result.failure(Exception("Fetch $path (${resp.code})"))
                 else Result.success(body)
             } catch (e: Exception) { Result.failure(e) }
         }
@@ -129,9 +122,9 @@ class GitHubClient(val token: String, val owner: String) {
 
     suspend fun getLatestRun(repo: String): Result<WorkflowRun> = withContext(Dispatchers.IO) {
         try {
-            val req = authRequest("https://api.github.com/repos/$owner/$repo/actions/runs?per_page=1").get().build()
-            val resp = http.newCall(req).execute()
+            val resp = http.newCall(auth("https://api.github.com/repos/$owner/$repo/actions/runs?per_page=1").get().build()).execute()
             val body = resp.body?.string() ?: ""
+            if (!resp.isSuccessful) return@withContext Result.failure(Exception("Runs error: $body"))
             val runs = JSONObject(body).getJSONArray("workflow_runs")
             if (runs.length() == 0) return@withContext Result.failure(Exception("No runs yet"))
             val r = runs.getJSONObject(0)
@@ -139,31 +132,43 @@ class GitHubClient(val token: String, val owner: String) {
         } catch (e: Exception) { Result.failure(e) }
     }
 
-    suspend fun getErrorLines(runId: Long, repo: String): String = withContext(Dispatchers.IO) {
+    suspend fun getRunById(repo: String, runId: Long): Result<WorkflowRun> = withContext(Dispatchers.IO) {
         try {
-            val jobsReq = authRequest("https://api.github.com/repos/$owner/$repo/actions/runs/$runId/jobs").get().build()
-            val jobsBody = http.newCall(jobsReq).execute().body?.string() ?: return@withContext ""
-            val jobId = JSONObject(jobsBody).getJSONArray("jobs").getJSONObject(0).getLong("id")
-            val logsReq = authRequest("https://api.github.com/repos/$owner/$repo/actions/jobs/$jobId/logs").get().build()
-            val logs = http.newCall(logsReq).execute().body?.string() ?: ""
-            logs.lines().filter { l ->
-                l.contains("error", ignoreCase = true) ||
-                l.contains("FAILED", ignoreCase = true) ||
-                l.contains("Exception")
-            }.takeLast(20).joinToString("\n")
-        } catch (e: Exception) { "Could not fetch logs: ${e.message}" }
+            val resp = http.newCall(auth("https://api.github.com/repos/$owner/$repo/actions/runs/$runId").get().build()).execute()
+            val body = resp.body?.string() ?: ""
+            if (!resp.isSuccessful) return@withContext Result.failure(Exception("Run error: $body"))
+            val r = JSONObject(body)
+            Result.success(WorkflowRun(r.getLong("id"), r.getString("status"), r.optString("conclusion").takeIf { it.isNotEmpty() }))
+        } catch (e: Exception) { Result.failure(e) }
     }
 
-    // ── Validate token ────────────────────────────────────────────────────────
+    /**
+     * Fetches the job log and returns lines relevant to compilation errors.
+     */
+    suspend fun getFullErrorLog(runId: Long, repo: String): String = withContext(Dispatchers.IO) {
+        try {
+            val jobsBody = http.newCall(auth("https://api.github.com/repos/$owner/$repo/actions/runs/$runId/jobs").get().build())
+                .execute().body?.string() ?: return@withContext "No jobs found"
+            val jobId = JSONObject(jobsBody).getJSONArray("jobs").getJSONObject(0).getLong("id")
+            val logs  = http.newCall(auth("https://api.github.com/repos/$owner/$repo/actions/jobs/$jobId/logs").get().build())
+                .execute().body?.string() ?: ""
+            logs.lines().filter { l ->
+                l.contains("error", true) || l.contains("FAILED") || l.contains("Exception") ||
+                l.contains("e: ") || l.contains(": error:") || l.contains("Unresolved reference") ||
+                l.contains("None of the following") || l.contains("warning:")
+            }.take(80).joinToString("\n")
+        } catch (e: Exception) { "Log fetch failed: ${e.message}" }
+    }
+
+    // ── Token validation ──────────────────────────────────────────────────────
 
     suspend fun validateToken(): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val req = authRequest("https://api.github.com/user").get().build()
-            val resp = http.newCall(req).execute()
+            val resp = http.newCall(auth("https://api.github.com/user").get().build()).execute()
             val body = resp.body?.string() ?: ""
             if (!resp.isSuccessful) return@withContext Result.failure(Exception("Invalid token (${resp.code})"))
             val login = JSONObject(body).optString("login", "")
-            if (login.isEmpty()) Result.failure(Exception("Could not get GitHub username"))
+            if (login.isEmpty()) Result.failure(Exception("Could not read GitHub username"))
             else Result.success(login)
         } catch (e: Exception) { Result.failure(e) }
     }
