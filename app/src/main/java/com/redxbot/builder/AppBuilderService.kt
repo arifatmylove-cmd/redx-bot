@@ -308,8 +308,11 @@ class AppBuilderService(private val context: Context) {
     }
 
     private fun injectGradleDeps(gradle: String, deps: List<String>): String {
-        val lines = deps.joinToString("\n    ") { "implementation '$it'" }
-        return gradle.replace("}", "    $lines\n}", 1)
+        val lines  = deps.joinToString("\n    ") { "implementation '$it'" }
+        val lastBrace = gradle.lastIndexOf('}')
+        return if (lastBrace >= 0)
+            gradle.substring(0, lastBrace) + "    $lines\n}" + gradle.substring(lastBrace + 1)
+        else gradle
     }
 
     private fun injectMenuItems(mainActivity: String, items: List<GeneratedMenuItem>, pkg: String): String {
